@@ -37,9 +37,7 @@ In HTML, language resources are linked like this:
 
     <link 
       rel="localization"
-      href="app://{locale}.l10n.settings.gaiamobile.org/locales/settings.{locale}.properties">
-
-    Q. Do we need the `l10n` part following the `{locale}` variable?
+      href="app://{locale}.settings.l10n.gaiamobile.org/locales/settings.{locale}.properties">
 
 
 App's Manifest
@@ -58,8 +56,8 @@ languages:
       }
     },
     "overrides": {
-      "en-US.l10n.settings.gaiamobile.org": "/",
-      "de.l10n.settings.gaiamobile.org": "/"
+      "en-US.settings.l10n.gaiamobile.org": "/",
+      "de.settings.l10n.gaiamobile.org": "/"
     }
 
 The `languages` field is used for language negotiation.  The `overrides` field 
@@ -72,20 +70,20 @@ corresponding localization files.  It can be generated on build time from the
 `languages.available` field and the URL templates collected from the app's HTML 
 files.
 
-    Q. What is a good name for the `overrides` field?  Proposed: `overrides`, 
-    `resources`, `domains`, `hosts`, `origins`, `alias`.
+  1. What is a good name for the `overrides` field?  Proposed: `overrides`, 
+     `resources`, `domains`, `hosts`, `origins`, `alias`.
 
-    NB. This design makes it possible to also specify the resource override 
-    like so:
+  2. This design makes it possible to also specify the resource override like 
+     so:
 
-        "en-US.l10n.settings.gaiamobile.org": "/locales/"
+         "en-US.settings.l10n.gaiamobile.org": "/locales/"
 
-    …and to link to localization resources using the following URL:
+     …and to link to localization resources using the following URL:
 
-        app://{locale}.l10n.settings.gaiamobile.org/settings.{locale}.properties
+         app://{locale}.settings.l10n.gaiamobile.org/settings.{locale}.properties
 
-    NB. See also the section at the end of this document about generalizing 
-    this design to support other types of resources.
+  3. See also the section at the end of this document about generalizing this 
+     design to support other types of resources.
 
 
 App Installation
@@ -95,13 +93,13 @@ During app installation (or on buildtime) the following Gecko prefs are set
 as per the manifest:
 
     'webapps.languages.settings.gaiamobile.org':
-      '{"default":"en-US","available":{"en-US": "2.2-1","de": "2.2-1"}}'
-    'webapps.overrides.en-US.l10n.settings.gaiamobile.org':
+      '{"default":"en-US","available":{"en-US":"2.2-1","de":"2.2-1"}}'
+    'webapps.overrides.en-US.settings.l10n.gaiamobile.org':
       'settings.gaiamobile.org'
-    'webapps.overrides.de.l10n.settings.gaiamobile.org':
+    'webapps.overrides.de.settings.l10n.gaiamobile.org':
       'settings.gaiamobile.org'
 
-    Q. Are Gecko prefs the right place to store this data?
+  1. Are Gecko prefs the right place to store this data?
 
 
 App.getLanguages
@@ -159,18 +157,19 @@ An example code in l10n.js using this API could look like this:
       }
     });
 
-    Q. How do we handle changes in available languages that happen during app's 
-    runtime?  Can an open app dynamically react to them?  Should there be an 
-    `availablelanguageschange` event and which object should emit it 
-    (`navigator.mozApps`?)?  Can l10n.js listen to events about other apps 
-    being installed/uninstalled and react if the app in question is a langpack?
+  1. How do we handle changes in available languages that happen during app's 
+     runtime?  Can an open app dynamically react to them?  Should there be an 
+     `availablelanguageschange` event and which object should emit it 
+     (`navigator.mozApps`? `document`?)?  Can l10n.js listen to events about 
+     other apps being installed/uninstalled and react if the app in question is 
+     a langpack?
 
-    NB. An alternative approach would be to create a new native API, e.g.  
-    `navigator.mozLanguageSupport.get(appOrigin)`. The idea is that additional 
-    locales for an appOrigin are stored by the navigator, not the app itself.  
-    This API could be then used to emit the `availablelanguageschange` events 
-    as well as provide methods for resource fetching (instead of the app: 
-    protocol approach described below).
+  2. An alternative approach would be to create a new native API, e.g.  
+     `navigator.mozLanguageSupport.get(appOrigin)`. The idea is that additional 
+     locales for an appOrigin are stored by the navigator, not the app itself.  
+     This API could be then used to emit the `availablelanguageschange` events 
+     as well as provide methods for resource fetching (instead of the app: 
+     protocol approach described below).
 
 
 
@@ -182,17 +181,17 @@ resolve the URL templates from `link` elements and fetch the resources in the
 correct language.  For instance, if the first language on the negotiated list 
 is German, the following URL template:
 
-    app://{locale}.l10n.settings.gaiamobile.org/locales/settings.{locale}.properties
+    app://{locale}.settings.l10n.gaiamobile.org/locales/settings.{locale}.properties
 
 …becomes:
 
-    app://de.l10n.settings.gaiamobile.org/locales/settings.de.properties
+    app://de.settings.l10n.gaiamobile.org/locales/settings.de.properties
 
 This URI is used to perform an XHR request by the l10n.js library.  The app 
 protocol handler gets the value of the Gecko pref corresponding to the host of 
 the requested URI:
 
-    'webapps.overrides.de.l10n.settings.gaiamobile.org':
+    'webapps.overrides.de.settings.l10n.gaiamobile.org':
       'settings.gaiamobile.org'
 
 …and uses this value as the host name to create a new, valid URI:
@@ -209,7 +208,8 @@ Langpack App Manifest
 Langpacks are webapp with a special 'langpack' role.  They're hidden from the 
 Homescreen and can't be launched.  They act as bundles of resources which 
 override requests to certain origins.  A single langpack can contain resources 
-for multiple apps and multiple languages.
+for multiple apps and multiple languages.  An example of a langpack manifest 
+with the origin `my-langpack.gaiamobile.org` looks like this:
 
     "role": "langpack",
     "languages-provided": {
@@ -222,13 +222,13 @@ for multiple apps and multiple languages.
       }
     }
     "overrides": {
-      "de.l10n.system.gaiamobile.org": "/system",
-      "de.l10n.settings.gaiamobile.org": "/settings"
-      "pl.l10n.settings.gaiamobile.org": "/settings"
+      "de.system.l10n.gaiamobile.org": "/system",
+      "de.settings.l10n.gaiamobile.org": "/settings"
+      "pl.settings.l10n.gaiamobile.org": "/settings"
     }
 
-    Q. Can we enforce that overrides are defined only for subdomains of apps 
-    listed in `languages-provided`?
+  1. Can we enforce that overrides are defined only for subdomains of 
+     apps listed in `languages-provided`?
 
 A special `languages-provided` field defines languages and their versions for 
 app origins.  This information is used for language negotiation.
@@ -243,11 +243,11 @@ only if__ the language pack's version is newer then the already installed.
     'webapps.languages.settings.gaiamobile.org':
       '{"default":"en-US",
         "available":{"en-US":"2.2-1","de":"2.2-4","pl":"2.2-7"}}'
-    'webapps.overrides.en-US.l10n.settings.gaiamobile.org':
+    'webapps.overrides.en-US.settings.l10n.gaiamobile.org':
       'settings.gaiamobile.org'
-    'webapps.overrides.de.l10n.settings.gaiamobile.org':
+    'webapps.overrides.de.settings.l10n.gaiamobile.org':
       'my-langpack.gaiamobile.org/settings'
-    'webapps.overrides.pl.l10n.settings.gaiamobile.org':
+    'webapps.overrides.pl.settings.l10n.gaiamobile.org':
       'my-langpack.gaiamobile.org/settings'
 
     Q. What happens when a langpack is uninstalled?
@@ -273,17 +273,17 @@ negotiate the UI language using user's preferred languages stored in
 Once the negotiation has completed, specific resources can be fetched.  Again, 
 `{locale}` is replaced by l10n.js with the result of the negotiation.
 
-    app://{locale}.l10n.settings.gaiamobile.org/locales/settings.{locale}.properties
+    app://{locale}.settings.l10n.gaiamobile.org/locales/settings.{locale}.properties
 
 …becomes:
 
-    app://pl.l10n.settings.gaiamobile.org/locales/settings.pl.properties
+    app://pl.settings.l10n.gaiamobile.org/locales/settings.pl.properties
 
 This URI is used to perform an XHR request by the l10n.js library.  The app 
 protocol handler gets the value of the Gecko pref corresponding to the host of 
 the requested URI:
 
-    'webapps.overrides.pl.l10n.settings.gaiamobile.org':
+    'webapps.overrides.pl.settings.l10n.gaiamobile.org':
       'my-langpack.gaiamobile.org/settings'
 
 …and uses this value as the host name to create a new, valid URI:
@@ -326,7 +326,7 @@ Saved pref on app install:
     'webapps.overrides.theme.gaiamobile.org':
       'settings.gaiamobile.org'
 
-Theme pack (origin: my-theme.gaiamobile.org) manifest:
+Theme pack (origin: `my-theme.gaiamobile.org`) manifest:
 
     "role": "themepack",
     "overrides": {
