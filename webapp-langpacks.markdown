@@ -15,10 +15,6 @@ There are two independent parts of the language package system:
  - localization resources IO, which fetches the resources either from the 
    current app or a user-installed langpack.
 
-This proposal relies on the app installation process to set Gecko prefs which 
-store the list of languages available for the given app, and the app protocol 
-handler to redirect l10n resource IO to langpacks, if necessary.
-
 This proposal relies on new native API methods which provide a way to query the 
 platform for any additional languages available for the current app as well as 
 to fetch resources provided by other apps for the current app.
@@ -106,6 +102,7 @@ langpacks (from the step before), it can decide which method of IO to use:
   - For languages provided by langpacks, the resources are fetched via the 
     `mozApps.getResource()` native API.
 
+In case of the `/locales/email.de.properties` resource, a regular XHR is used.
 
 
 Langpack App Manifest
