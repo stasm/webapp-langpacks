@@ -234,6 +234,9 @@ app's manifest.
      `manifest.webapp` or to use `mozApps.getResource()`?  It could 
      first try the former and resort to the latter.
 
+  2. This assumes `mozApps.getResource()` requests can span different domain.  
+     How can we avoid this?
+
 [Gaia grid]: https://github.com/mozilla-b2g/gaia/blob/a6c295a7a6bddf5bcd42d970725300c4c30760b8/shared/elements/gaia_grid/js/items/mozapp.js#L169-L180
 [ManifestHelper]: https://github.com/mozilla-b2g/gaia/blob/a6c295a7a6bddf5bcd42d970725300c4c30760b8/shared/js/manifest_helper.js
 
