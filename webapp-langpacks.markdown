@@ -209,6 +209,35 @@ The `getResource` API queries the chrome IndexedDB for
      the contents of the .properties file?  Parsed JSON?  ZIP of the langpack?
 
 
+Localizing App Names
+--------------------
+
+Each langpack can provide a special file next to the target app's locales/ 
+directory with localization resources:  `manifest.{locale}.properties`.  This 
+file has a `name` and `description` strings and is used to provide localizations 
+of the app names on the Homescreen, on the Rocket bar, in the Haida Cards view, 
+in Task Manager and in the Settings > App Permissions panel.
+
+For Homescreen, the code in [Gaia Grid][] is responsible for returning the 
+localized name of the app.  For other places, a helper class called the 
+[ManifestHelper][] is responsible for returning the localized app names. 
+
+Both can use the `mozApps.getResource()` API to fetch the 
+`manifest.{locale}.properties` file if the translation has not been found in the 
+app's manifest.
+
+    mozApps.getResource(
+      'app://email.gaiamobile.org/manifest.webapp',
+      '/manifest.pl.properties');
+
+  1. How can this code know whether to fetch from the app's 
+     `manifest.webapp` or to use `mozApps.getResource()`?  It could 
+     first try the former and resort to the latter.
+
+[Gaia grid]: https://github.com/mozilla-b2g/gaia/blob/a6c295a7a6bddf5bcd42d970725300c4c30760b8/shared/elements/gaia_grid/js/items/mozapp.js#L169-L180
+[ManifestHelper]: https://github.com/mozilla-b2g/gaia/blob/a6c295a7a6bddf5bcd42d970725300c4c30760b8/shared/js/manifest_helper.js
+
+
 Langpack Uninstallation
 -----------------------
 
@@ -260,6 +289,11 @@ Gaia Team:
     - Add the link to Marketplace in the Settings > Languages panel.
     - React to the `additionallanguageschange` event in 
       `shared/js/language_list.js`.
+  - Homescreen:  Add support for retrieving localized names of applications from 
+    langpacks via `mozApps.getResource`.
+  - Shared:  Use `mozApps.getResource` in `shared/js/manifest_helper.js` in 
+    order to provide localized app names for the Cards view, the Task Manager, 
+    the Rocketbar and the Settings > App Permissions panel.
 
 L10n Team:
 
