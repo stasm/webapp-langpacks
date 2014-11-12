@@ -39,6 +39,12 @@ In HTML, language resources are linked like this:
       rel="localization"
       href="app://{locale}.settings.l10n.gaiamobile.org/locales/settings.{locale}.properties">
 
+The information about the available and the default languages is stored in 
+`meta` elements:
+
+    <meta name="defaultLanguage" content="en-US">
+    <meta name="availableLanguages" content="en-US:2.2-1, de:2.2-1">
+
 
 App's Manifest
 --------------
@@ -48,20 +54,10 @@ languages:
 
     "name": "Gaia Settings",
     "version": "2.2",
-    "languages": {
-      "default": "en-US",
-      "available": {
-        "en-US": "2.2-1",
-        "de": "2.2-1"
-      }
-    },
     "overrides": {
       "en-US.settings.l10n.gaiamobile.org": "/",
       "de.settings.l10n.gaiamobile.org": "/"
     }
-
-The `languages` field is used for language negotiation.  The `overrides` field 
-is used for resource fetching.
 
 The `overrides` field is optional (in which case the link elements in the HTML 
 need to point to the same domain as the current app's).  It's a mapping of all 
@@ -92,8 +88,6 @@ App Installation
 During app installation (or on buildtime) the following Gecko prefs are set 
 as per the manifest:
 
-    'webapps.languages.settings.gaiamobile.org':
-      '{"default":"en-US","available":{"en-US":"2.2-1","de":"2.2-1"}}'
     'webapps.overrides.en-US.settings.l10n.gaiamobile.org':
       'settings.gaiamobile.org'
     'webapps.overrides.de.settings.l10n.gaiamobile.org':
@@ -102,75 +96,43 @@ as per the manifest:
   1. Are Gecko prefs the right place to store this data?
 
 
-App.getLanguages
-----------------
+mozApps.getAdditionalLanguages()
+--------------------------------
 
 When a document is opened the l10n.js library is tasked with negotiating the 
-correct language to display the UI in to the user.  It uses navigator.languages 
-to get the list of user's preferred langs and the App.getLanguages API (in case 
-ofwebapps) or `meta` elements (in case of regular webpages) to get the list of 
+correct language to display the UI in to the user.  It uses 
+`navigator.languages` to get the list of user's preferred langs, the 
+`mozApps.getAdditionalLanguages` API and the `meta` elements to get the list of 
 languages available for the current app, as well as the default language.  The 
 result of the negotiation is a list of supported locales.
 
-For webapps, the information about the languages available for the current app 
-is stored in a Gecko pref and can be accessed via the `mozApps` API.
+The information about extra languages available for the current app is stored 
+in a Gecko pref and can be accessed via the `mozApps` API.
 
-    App.getLanguages();
+    mozApps.getAdditionalLanguages(manifestURI);
 
 This method returns a `DOMRequest` which resolves to the JSON-parsed value of 
 the `'webapps.languages.' + appId` Gecko pref.
 
-For regular webpages, the same kind of information is stored in meta elements 
-and can be accessed synchronously.  There is no special localization manifest 
-for regular webpages.
+The information about the bundled and the default languages is stored in `meta` 
+elements and can be accessed synchronously.
 
 An example code in l10n.js using this API could look like this:
 
-    function getAppLanguages() {
-      return new Promise(function(resolve, reject) [
-        var appReq = navigator.mozApps.getSelf();
-        appReq.onerror = reject;
-        appReq.onsuccess = function() {
-          var app = appReq.result;
-          if (app === null) {
-            return resolve(null);
-          }
-
-          var langsReq = app.getLanguages();
-          langsReq.onerror = reject;
-          langsReq.onsuccess = function() {
-            resolve(langsReq.result);
-          };
-        };
+    navigator.mozApps.getAdditionalLanguages(manifestURI).then(
+      function(extraLangs) {
+        /*
+         * Use <meta name="availableLanguages"> to get the list of 
+         * languages bundled with the app. Append extraLangs to it.   
+         * Negotiate supported languages using navigator.languages, the 
+         * list of all available languages including those coming from 
+         * langpacks and the value of <meta name="defaultLanguage">.
+         */
       });
-    }
 
-    getAppLanguages().then(function(langs) {
-      if (langs) {
-        // Negotiate supported languages using navigator.languages, 
-        // langs.default and langs.available.
-      } else {
-        // We're not in an app or there are no registered languages.
-        // Try to find <meta name="availableLanguages"> and 
-        // <meta name="defaultLanguage"> and continue with language 
-        // negotiation.
-      }
-    });
-
-  1. How do we handle changes in available languages that happen during app's 
-     runtime?  Can an open app dynamically react to them?  Should there be an 
-     `availablelanguageschange` event and which object should emit it 
-     (`navigator.mozApps`? `document`?)?  Can l10n.js listen to events about 
-     other apps being installed/uninstalled and react if the app in question is 
-     a langpack?
-
-  2. An alternative approach would be to create a new native API, e.g.  
-     `navigator.mozLanguageSupport.get(appOrigin)`. The idea is that additional 
-     locales for an appOrigin are stored by the navigator, not the app itself.  
-     This API could be then used to emit the `availablelanguageschange` events 
-     as well as provide methods for resource fetching (instead of the app: 
-     protocol approach described below).
-
+When a langpack is installed or removed, an `availablelanguageschange` event is 
+dispatched on the `document` with the list of extra languages provided as 
+a `languages` event detail.
 
 
 Resource IO
@@ -241,8 +203,7 @@ When a langpack is installed, corresponding Gecko prefs are modified __if and
 only if__ the language pack's version is newer then the already installed.
 
     'webapps.languages.settings.gaiamobile.org':
-      '{"default":"en-US",
-        "available":{"en-US":"2.2-1","de":"2.2-4","pl":"2.2-7"}}'
+      '{"de":"2.2-4","pl":"2.2-7"}'
     'webapps.overrides.en-US.settings.l10n.gaiamobile.org':
       'settings.gaiamobile.org'
     'webapps.overrides.de.settings.l10n.gaiamobile.org':
@@ -250,9 +211,9 @@ only if__ the language pack's version is newer then the already installed.
     'webapps.overrides.pl.settings.l10n.gaiamobile.org':
       'my-langpack.gaiamobile.org/settings'
 
-    Q. What happens when a langpack is uninstalled?
+  1. What happens when a langpack is uninstalled?
 
-    Q. What happens when the target app is uninstalled?
+  2. What happens when the target app is uninstalled?
 
 In order to support uninstallation and allow to revert the values of prefs it 
 might be necessary to keep the original value of each pref if a langpack wants 
@@ -265,10 +226,10 @@ could be used?
 Language Negotiation and Resource IO, with Langpacks
 ----------------------------------------------------
 
-`App.getLanguages()` for a given app now returns the newer version of `de`, as 
-well as adds `pl` to the list of available languages.  The l10n.js library can 
-negotiate the UI language using user's preferred languages stored in 
-`navigator.languages`.
+`mozApps.getAdditionalLanguages()` for a given app now returns the newer 
+version of `de`, as well as adds `pl` to the list of available languages.  The 
+l10n.js library can negotiate the UI language using user's preferred languages 
+stored in `navigator.languages`.
 
 Once the negotiation has completed, specific resources can be fetched.  Again, 
 `{locale}` is replaced by l10n.js with the result of the negotiation.
