@@ -262,9 +262,9 @@ Platform Team:
     - `mozApps.sgetAdditionalLanguages`
     - `mozApps.getResource`
   - Write custom logic for language pack installation.
-  - Write logic for storing and retrieving resources in chrome’s 
-    IndexedDB.
+  - Write logic for storing and retrieving resources in chrome’s IndexedDB.
   - Write logic for firing `additionallanguageschange` event.
+
 
 Marketplace Team:
 
@@ -272,12 +272,13 @@ Marketplace Team:
   - Create a landing page for the 'language pack' addon type
   - Provide REST API for retrieving list of available language packs
 
+
 UX Team:
 
-  - Design interaction flow for discovering, installing and selecting additional 
-    languages
-    - The minimal idea is to add a link in the Settings > Languages panel to the 
-      Marketplace's landing page for langpacks.
+  - Design interaction flow for discovering, installing and selecting 
+    additional languages
+    - The minimal idea is to add a link in the Settings > Languages panel to 
+      the Marketplace's landing page for langpacks.
     - Make sure the user returns to the Settings > Language panel after 
       installing a langpack.  Should the system prompt the user to enable the 
       newly installed locale right away?
@@ -286,17 +287,19 @@ UX Team:
     - Installing keyboard layouts and IMEs?
     - Installing dictionary files?
 
+
 Gaia Team:
 
   - Settings: Extend the Language Panel to support the flow designed by UX.
     - Add the link to Marketplace in the Settings > Languages panel.
     - React to the `additionallanguageschange` event in 
       `shared/js/language_list.js`.
-  - Homescreen:  Add support for retrieving localized names of applications from 
-    langpacks via `mozApps.getResource`.
+  - Homescreen:  Add support for retrieving localized names of applications 
+    from langpacks via `mozApps.getResource`.
   - Shared:  Use `mozApps.getResource` in `shared/js/manifest_helper.js` in 
     order to provide localized app names for the Cards view, the Task Manager, 
     the Rocketbar and the Settings > App Permissions panel.
+
 
 L10n Team:
 
@@ -304,11 +307,22 @@ L10n Team:
     - Use `mozApps.getAdditionalLanguages()` in the bootstrapping code when 
       looking for the information about the available languages.  
     - Remove the codepath which fetches the manifest to get this information;  
-      from now on we will require `meta` elements to provide it inlined into the 
-      HTML.
+      from now on we will require `meta` elements to provide it inlined into 
+      the HTML.
     - Create logic which negotiates languages and their versions given the list 
       of languages bundled in the app and the list returned by 
       `mozApps.getAdditionalLanguages()`.
     - Mark which negotiated languages come from the app and which come from 
       langpacks.
     - Use regular XHR or `mozAppgetResource()` accordingly.
+  - Buildtime L10n.js changes:
+    - Inline information about languages and their versions in meta elements.  
+      (Right now we only inline language codes without versions).
+
+
+Rel Eng / Localization infrastructure:
+
+  - We need a way to build langpacks from specific l10n changesets (singed off 
+    on by the localizers and approved by the l10n team) and upload them to the 
+    Marketplace.  Spec TBD.
+
