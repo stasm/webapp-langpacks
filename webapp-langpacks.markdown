@@ -137,6 +137,8 @@ app origins.  This information is used for the language negotiation.
   1. Can we skip the protocol part of the manifest URI in the keys of the 
      `languages_provided` object?
 
+  2. Do we need to explicitly list all l10n resources in the manifest?
+
 
 Langpack Installation
 ---------------------
@@ -151,10 +153,15 @@ saved in the database:
       "pl": "2.2-7"
     }
 
-Each resource form the langpack is also saved in the DB, keyed by the app it 
-belongs to and the resource path:
+For each app, each resource form the langpack (from the corresponding 
+`basepath` directory) is also saved in the DB, keyed by the app it belongs to 
+and the resource path.
 
     resource,app://email.gaiamobile.org/manifest.webapp,locales/email.de.properties: "foo=Foo\nbar=Bar"
+
+  1. This requires a way to get the list of all files in the langpacks 
+     implicitly.  See question #2 above about providing the list explicitly in 
+     langpack's manifest.
     
 
 Language Negotiation and Resource IO, with Langpacks
