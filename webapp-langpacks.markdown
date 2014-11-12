@@ -1,8 +1,8 @@
-App Protocol Langpacks Spec
-===========================
+Webapp Langpacks Spec
+=====================
 
-This document outlines the design of the language package support implemented 
-via the `app:` protocol handler.  The design revolves around special webapps 
+This document outlines the design of the language package support for webapps 
+and instant webapps.  The design revolves around special webapps 
 which can register themselves to provide localization resources for multiple 
 apps and multiple languages at once.
 
@@ -19,15 +19,11 @@ This proposal relies on the app installation process to set Gecko prefs which
 store the list of languages available for the given app, and the app protocol 
 handler to redirect l10n resource IO to langpacks, if necessary.
 
-In this first version of the spec, we propose that langpacks be certified apps 
-installed by partners to configure and easily extend language coverage of 
-Firefox OS builds without having to rebuild the entire system.  This also 
-allows the first implementation to ignore version checking.  In the future 
-versions of the spec we plan to lift the certification restriction and allow 
-langpacks to be privileged apps installed from the marketplace by the user.  
-For this reason, the current spec includes versioning data.
+This proposal relies on new native API methods which provide a way to query the 
+platform for any additional languages available for the current app as well as 
+to fetch resources provided by other apps for the current app.
 
-(In the following examples we use the Settings app to illustrate the design.)
+(In the following examples we use the Email app to illustrate the design.)
 
 
 App's HTML
@@ -37,63 +33,13 @@ In HTML, language resources are linked like this:
 
     <link 
       rel="localization"
-      href="app://{locale}.settings.l10n.gaiamobile.org/locales/settings.{locale}.properties">
+      href="/locales/email.{locale}.properties">
 
 The information about the available and the default languages is stored in 
 `meta` elements:
 
     <meta name="defaultLanguage" content="en-US">
     <meta name="availableLanguages" content="en-US:2.2-1, de:2.2-1">
-
-
-App's Manifest
---------------
-
-In the manifest, the app registers itself as a provider of its own bundled 
-languages:
-
-    "name": "Gaia Settings",
-    "version": "2.2",
-    "overrides": {
-      "en-US.settings.l10n.gaiamobile.org": "/",
-      "de.settings.l10n.gaiamobile.org": "/"
-    }
-
-The `overrides` field is optional (in which case the link elements in the HTML 
-need to point to the same domain as the current app's).  It's a mapping of all 
-possible per-language domains to the directory in which to look for the 
-corresponding localization files.  It can be generated on build time from the 
-`languages.available` field and the URL templates collected from the app's HTML 
-files.
-
-  1. What is a good name for the `overrides` field?  Proposed: `overrides`, 
-     `resources`, `domains`, `hosts`, `origins`, `alias`.
-
-  2. This design makes it possible to also specify the resource override like 
-     so:
-
-         "en-US.settings.l10n.gaiamobile.org": "/locales/"
-
-     …and to link to localization resources using the following URL:
-
-         app://{locale}.settings.l10n.gaiamobile.org/settings.{locale}.properties
-
-  3. See also the section at the end of this document about generalizing this 
-     design to support other types of resources.
-
-
-App Installation
-----------------
-
-During app installation (or on buildtime) the following Gecko prefs are set 
-as per the manifest:
-
-    'webapps.overrides.en-US.settings.l10n.gaiamobile.org':
-      'settings.gaiamobile.org'
-    'webapps.overrides.de.settings.l10n.gaiamobile.org':
-      'settings.gaiamobile.org'
-
-  1. Are Gecko prefs the right place to store this data?
 
 
 mozApps.getAdditionalLanguages()
@@ -140,28 +86,36 @@ Resource IO
 
 Once the l10n.js library has negotiated the list of supported languages, it can 
 resolve the URL templates from `link` elements and fetch the resources in the 
-correct language.  For instance, if the first language on the negotiated list 
-is German, the following URL template:
+correct language.
 
-    app://{locale}.settings.l10n.gaiamobile.org/locales/settings.{locale}.properties
+First, l10n.js resolves the URI of the resource to fetch:
+
+    /locales/email.{locale}.properties
 
 …becomes:
 
-    app://de.settings.l10n.gaiamobile.org/locales/settings.de.properties
+    /locales/email.de.properties
 
-This URI is used to perform an XHR request by the l10n.js library.  The app 
-protocol handler gets the value of the Gecko pref corresponding to the host of 
-the requested URI:
+Since l10n.js also knows which languages come from the app and which come from 
+langpacks (from the step before), it can decide which method of IO to use:
 
-    'webapps.overrides.de.settings.l10n.gaiamobile.org':
-      'settings.gaiamobile.org'
+  - For languages bundled with the app, the resources are fetched using regular 
+    XHR requests.
 
-…and uses this value as the host name to create a new, valid URI:
+  - For languages provided by langpacks, the resources are fetched via the 
+    `mozApps.getResource()` native API.
 
-    app://settings.gaiamobile.org/locales/settings.de.properties
 
-…which points to an existing resource.
+mozApps.getResource()
+---------------------
 
+This API provides a way for userland code to request resources provided for 
+a specific app by some other app.
+
+    mozApps.getResource(manifestURI, resourcePath);
+
+It is not a method of the `App` object to allow instant webapps (which are not 
+installed) to benefit from langpacks.
 
 
 Langpack App Manifest
@@ -175,52 +129,32 @@ with the origin `my-langpack.gaiamobile.org` looks like this:
 
     "role": "langpack",
     "languages-provided": {
-      "system.gaiamobile.org": {
-        "de": "2.2-4"
+      "app://calendar.gaiamobile.org/manifest.webapp": {
+        "basepath": "/calendar",
+        "languages": {
+          "de": "2.2-4"
+        }
       },
-      "settings.gaiamobile.org": {
-        "de": "2.2-4",
-        "pl": "2.2-7"
+      "app://email.gaiamobile.org/manifest.webapp": {
+        "basepath": "/email",
+        "languages": {
+          "de": "2.2-4",
+          "pl": "2.2-7"
+        }
       }
     }
-    "overrides": {
-      "de.system.l10n.gaiamobile.org": "/system",
-      "de.settings.l10n.gaiamobile.org": "/settings"
-      "pl.settings.l10n.gaiamobile.org": "/settings"
-    }
-
-  1. Can we enforce that overrides are defined only for subdomains of 
-     apps listed in `languages-provided`?
 
 A special `languages-provided` field defines languages and their versions for 
-app origins.  This information is used for language negotiation.
+app origins.  This information is used for the language negotiation.
+
+  1. Can we skip the protocol part of the manifest URI in the keys of the 
+     `languages_provided` object?
 
 
 Langpack Installation
 ---------------------
 
-When a langpack is installed, corresponding Gecko prefs are modified __if and 
-only if__ the language pack's version is newer then the already installed.
-
-    'webapps.languages.settings.gaiamobile.org':
-      '{"de":"2.2-4","pl":"2.2-7"}'
-    'webapps.overrides.en-US.settings.l10n.gaiamobile.org':
-      'settings.gaiamobile.org'
-    'webapps.overrides.de.settings.l10n.gaiamobile.org':
-      'my-langpack.gaiamobile.org/settings'
-    'webapps.overrides.pl.settings.l10n.gaiamobile.org':
-      'my-langpack.gaiamobile.org/settings'
-
-  1. What happens when a langpack is uninstalled?
-
-  2. What happens when the target app is uninstalled?
-
-In order to support uninstallation and allow to revert the values of prefs it 
-might be necessary to keep the original value of each pref if a langpack wants 
-to overwrite it.  Maybe `nsIPrefService.getBranch()` and `.getDefaultBranch` 
-could be used?
-
-    http://mxr.mozilla.org/mozilla-central/source/modules/libpref/nsIPrefService.idl
+TBD.
     
 
 Language Negotiation and Resource IO, with Langpacks
@@ -234,24 +168,19 @@ stored in `navigator.languages`.
 Once the negotiation has completed, specific resources can be fetched.  Again, 
 `{locale}` is replaced by l10n.js with the result of the negotiation.
 
-    app://{locale}.settings.l10n.gaiamobile.org/locales/settings.{locale}.properties
+    /locales/email.{locale}.properties
 
 …becomes:
 
-    app://pl.settings.l10n.gaiamobile.org/locales/settings.pl.properties
+    /locales/email.pl.properties
 
-This URI is used to perform an XHR request by the l10n.js library.  The app 
-protocol handler gets the value of the Gecko pref corresponding to the host of 
-the requested URI:
+Since 'pl' is a langpack language (one of the languages returned by 
+`mozApps.getAvailableLanguages()`), l10n.js will use the native API to get the 
+resource:
 
-    'webapps.overrides.pl.settings.l10n.gaiamobile.org':
-      'my-langpack.gaiamobile.org/settings'
-
-…and uses this value as the host name to create a new, valid URI:
-
-    app://my-langpack.gaiamobile.org/settings/locales/settings.de.properties
-
-…which points to an existing resource in the langpack.
+    mozApps.getResource(
+      'app://email.gaiamobile.org/manifest.webapp',
+      '/locales/email.pl.properties');
 
 
 Langpack Uninstallation
@@ -264,38 +193,4 @@ App Upgrade & Uninstallation
 ----------------------------
 
 TBD.
-
-
-Generalization to other resources
----------------------------------
-
-Settings HTML:
-
-    <link 
-      rel="stylesheet"
-      href="app://theme.gaiamobile.org/css/theme.css">
-
-Settings `manifest.webapp`:
-
-    "name": "Gaia Settings",
-    "overrides": {
-      "theme.gaiamobile.org": "/",
-    }
-
-Saved pref on app install:
-
-    'webapps.overrides.theme.gaiamobile.org':
-      'settings.gaiamobile.org'
-
-Theme pack (origin: `my-theme.gaiamobile.org`) manifest:
-
-    "role": "themepack",
-    "overrides": {
-      "theme.gaiamobile.org": "/"
-    }
-
-Modified pref on theme pack install:
-
-    'webapps.overrides.theme.gaiamobile.org':
-      'my-theme.gaiamobile.org'
 
