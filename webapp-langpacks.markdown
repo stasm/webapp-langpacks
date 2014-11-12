@@ -194,3 +194,26 @@ App Upgrade & Uninstallation
 
 TBD.
 
+Requirements
+----------------------------
+
+Platform Team:
+ - Write support for Langpacks API
+    - getAdditionalLanguages
+    - getResource
+ - Write custom logic for language pack installation
+ - Write logic for storing and retrieving resources in chrome’s IDB
+ - Write logic for firing additionallanguageschange event
+
+Marketplace Team:
+ - Write support for ‘language pack’ addon type
+ - Provide REST API for retrieving list of available language packs
+
+UX Team:
+ - Design interaction flow for discovering, installing and selecting additional languages
+
+Gaia Team:
+ - Extend Settings to support the flow designed by UX
+
+L10n Team:
+ - Update l10n.js library to support new Langpack API on runtime and buildtime
