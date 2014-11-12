@@ -197,11 +197,13 @@ a specific app by some other app.
 It is not a method of the `App` object to allow instant webapps (which are not 
 installed) to benefit from langpacks.
 
-The `getResource` API queries the chrome IndexedDB for `resource, + manifestURI 
-+ ',' + resourcePath` and returns the contents stored in the DB:
+The `getResource` API queries the chrome IndexedDB for 
+
+    'resource,' + manifestURI + ',' + resourcePath
+
+…and returns the contents stored in the DB:
 
     resource,app://email.gaiamobile.org/manifest.webapp,locales/email.de.properties: "foo=Foo\nbar=Bar"
-
 
   1. The locale code is already declared in the resource path;  do we need to 
      pass it as an argument to `getResource`?
