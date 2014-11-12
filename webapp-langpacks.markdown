@@ -220,6 +220,7 @@ App Upgrade & Uninstallation
 
 TBD.
 
+
 Requirements
 ------------
 
@@ -241,13 +242,13 @@ Marketplace Team:
 
 UX Team:
 
-  - Design interaction flow for discovering, installing and selecting 
-    additional languages
-    - The minimal idea is to add a link in the Settings > Languages 
-      panel to the Marketplace's landing page for langpacks.
+  - Design interaction flow for discovering, installing and selecting additional 
+    languages
+    - The minimal idea is to add a link in the Settings > Languages panel to the 
+      Marketplace's landing page for langpacks.
     - Make sure the user returns to the Settings > Language panel after 
-      installing a langpack.  Should the system prompt the user to 
-      enable the newly installed locale right away?
+      installing a langpack.  Should the system prompt the user to enable the 
+      newly installed locale right away?
     - Update the list of installed languages in the Language panel.
   - Open questions:
     - Installing keyboard layouts and IMEs?
@@ -255,7 +256,7 @@ UX Team:
 
 Gaia Team:
 
-  - Extend Settings to support the flow designed by UX.
+  - Settings: Extend the Language Panel to support the flow designed by UX.
     - Add the link to Marketplace in the Settings > Languages panel.
     - React to the `additionallanguageschange` event in 
       `shared/js/language_list.js`.
@@ -263,14 +264,14 @@ Gaia Team:
 L10n Team:
 
   - Runtime L10n.js changes:
-    - Use `mozApps.getAdditionalLanguages()` in the bootstrapping code 
-      when looking for the information about the available languages.  
-    - Remove the codepath which fetches the manifest to get this 
-      information;  from now on we will require `meta` elements to 
-      provide it inlined into the HTML.
-    - Create logic which negotiates languages and their versions given 
-      the list of languages bundled in the app and the list returned by 
+    - Use `mozApps.getAdditionalLanguages()` in the bootstrapping code when 
+      looking for the information about the available languages.  
+    - Remove the codepath which fetches the manifest to get this information;  
+      from now on we will require `meta` elements to provide it inlined into the 
+      HTML.
+    - Create logic which negotiates languages and their versions given the list 
+      of languages bundled in the app and the list returned by 
       `mozApps.getAdditionalLanguages()`.
-    - Mark which negotiated languages come from the app and which come 
-      from langpacks.
+    - Mark which negotiated languages come from the app and which come from 
+      langpacks.
     - Use regular XHR or `mozAppgetResource()` accordingly.
