@@ -36,7 +36,7 @@ In HTML, language resources are linked like this:
       href="/locales/email.{locale}.properties">
 
 The information about the available and the default languages is stored in 
-`meta` elements:
+`meta` elements (built on buildtime):
 
     <meta name="defaultLanguage" content="en-US">
     <meta name="availableLanguages" content="en-US:2.2-1, de:2.2-1">
@@ -57,8 +57,9 @@ in a Gecko pref and can be accessed via the `mozApps` API.
 
     mozApps.getAdditionalLanguages(manifestURI);
 
-This method returns a `DOMRequest` which resolves to the JSON-parsed value of 
-the `'webapps.languages.' + appId` Gecko pref.
+This method returns a `DOMRequest` which resolves to an object with installed 
+additional languages available for the current apps as keys and language 
+versions as values.
 
 The information about the bundled and the default languages is stored in `meta` 
 elements and can be accessed synchronously.
@@ -76,7 +77,7 @@ An example code in l10n.js using this API could look like this:
          */
       });
 
-When a langpack is installed or removed, an `availablelanguageschange` event is 
+When a langpack is installed or removed, an `additionallanguageschange` event is 
 dispatched on the `document` with the list of extra languages provided as 
 a `languages` event detail.
 
@@ -105,17 +106,6 @@ langpacks (from the step before), it can decide which method of IO to use:
   - For languages provided by langpacks, the resources are fetched via the 
     `mozApps.getResource()` native API.
 
-
-mozApps.getResource()
----------------------
-
-This API provides a way for userland code to request resources provided for 
-a specific app by some other app.
-
-    mozApps.getResource(manifestURI, resourcePath);
-
-It is not a method of the `App` object to allow instant webapps (which are not 
-installed) to benefit from langpacks.
 
 
 Langpack App Manifest
@@ -154,7 +144,20 @@ app origins.  This information is used for the language negotiation.
 Langpack Installation
 ---------------------
 
-TBD.
+Chrome's IndexedDB is used to store the information about the new additional 
+languages and the contents of the additional resources.  When a new langpack is 
+installed, the information about the new additional languages for each app is 
+saved in the database:
+
+    languages,app://email.gaiamobile.org/manifest.webapp: {
+      "de": "2.2-4",
+      "pl": "2.2-7"
+    }
+
+Each resource form the langpack is also saved in the DB, keyed by the app it 
+belongs to and the resource path:
+
+    resource,app://email.gaiamobile.org/manifest.webapp,locales/email.de.properties: "foo=Foo\nbar=Bar"
     
 
 Language Negotiation and Resource IO, with Langpacks
@@ -183,6 +186,30 @@ resource:
       '/locales/email.pl.properties');
 
 
+mozApps.getResource()
+---------------------
+
+This API provides a way for userland code to request resources provided for 
+a specific app by some other app.
+
+    mozApps.getResource(manifestURI, resourcePath);
+
+It is not a method of the `App` object to allow instant webapps (which are not 
+installed) to benefit from langpacks.
+
+The `getResource` API queries the chrome IndexedDB for `resource, + manifestURI 
++ ',' + resourcePath` and returns the contents stored in the DB:
+
+    resource,app://email.gaiamobile.org/manifest.webapp,locales/email.de.properties: "foo=Foo\nbar=Bar"
+
+
+  1. The locale code is already declared in the resource path;  do we need to 
+     pass it as an argument to `getResource`?
+
+  2. In which form do we store resource contents in the DB?  Raw string with 
+     the contents of the .properties file?  Parsed JSON?  ZIP of the langpack?
+
+
 Langpack Uninstallation
 -----------------------
 
@@ -195,25 +222,56 @@ App Upgrade & Uninstallation
 TBD.
 
 Requirements
-----------------------------
+------------
 
 Platform Team:
- - Write support for Langpacks API
-    - getAdditionalLanguages
-    - getResource
- - Write custom logic for language pack installation
- - Write logic for storing and retrieving resources in chrome’s IDB
- - Write logic for firing additionallanguageschange event
+
+  - Write support for Langpacks API
+    - `mozApps.sgetAdditionalLanguages`
+    - `mozApps.getResource`
+  - Write custom logic for language pack installation.
+  - Write logic for storing and retrieving resources in chrome’s 
+    IndexedDB.
+  - Write logic for firing `additionallanguageschange` event.
 
 Marketplace Team:
- - Write support for ‘language pack’ addon type
- - Provide REST API for retrieving list of available language packs
+
+  - Add support for ‘language pack’ addon type
+  - Create a landing page for the 'language pack' addon type
+  - Provide REST API for retrieving list of available language packs
 
 UX Team:
- - Design interaction flow for discovering, installing and selecting additional languages
+
+  - Design interaction flow for discovering, installing and selecting 
+    additional languages
+    - The minimal idea is to add a link in the Settings > Languages 
+      panel to the Marketplace's landing page for langpacks.
+    - Make sure the user returns to the Settings > Language panel after 
+      installing a langpack.  Should the system prompt the user to 
+      enable the newly installed locale right away?
+    - Update the list of installed languages in the Language panel.
+  - Open questions:
+    - Installing keyboard layouts and IMEs?
+    - Installing dictionary files?
 
 Gaia Team:
- - Extend Settings to support the flow designed by UX
+
+  - Extend Settings to support the flow designed by UX.
+    - Add the link to Marketplace in the Settings > Languages panel.
+    - React to the `additionallanguageschange` event in 
+      `shared/js/language_list.js`.
 
 L10n Team:
- - Update l10n.js library to support new Langpack API on runtime and buildtime
+
+  - Runtime L10n.js changes:
+    - Use `mozApps.getAdditionalLanguages()` in the bootstrapping code 
+      when looking for the information about the available languages.  
+    - Remove the codepath which fetches the manifest to get this 
+      information;  from now on we will require `meta` elements to 
+      provide it inlined into the HTML.
+    - Create logic which negotiates languages and their versions given 
+      the list of languages bundled in the app and the list returned by 
+      `mozApps.getAdditionalLanguages()`.
+    - Mark which negotiated languages come from the app and which come 
+      from langpacks.
+    - Use regular XHR or `mozAppgetResource()` accordingly.
