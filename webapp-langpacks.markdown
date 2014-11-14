@@ -115,18 +115,23 @@ for multiple apps and multiple languages.  An example of a langpack manifest
 with the origin `my-langpack.gaiamobile.org` looks like this:
 
     "role": "langpack",
+    "languages-target": {
+      "app": "Gaia",
+      "version": "2.2"
+    },
     "languages-provided": {
-      "app://calendar.gaiamobile.org/manifest.webapp": {
-        "basepath": "/calendar",
-        "languages": {
-          "de": "2.2-4"
+      "de": {
+        "version": "2.2-4",
+        "origins": {
+          "app://calendar.gaiamobile.org/manifest.webapp": "/de/calendar",
+          "app://email.gaiamobile.org/manifest.webapp": "/de/email"
         }
       },
-      "app://email.gaiamobile.org/manifest.webapp": {
-        "basepath": "/email",
-        "languages": {
-          "de": "2.2-4",
-          "pl": "2.2-7"
+      "pl": {
+        "version": "2.2-7",
+        "origins": {
+          "app://calendar.gaiamobile.org/manifest.webapp": "/pl/calendar",
+          "app://email.gaiamobile.org/manifest.webapp": "/pl/email"
         }
       }
     }
@@ -137,7 +142,8 @@ app origins.  This information is used for the language negotiation.
   1. Can we skip the protocol part of the manifest URI in the keys of the 
      `languages_provided` object?
 
-  2. Do we need to explicitly list all l10n resources in the manifest?
+  2. Should we explicitly list all l10n resources in the manifest instead of 
+     defining the entry point dir for them?
 
 
 Langpack Installation
