@@ -36,8 +36,11 @@ In HTML, language resources are linked like this:
 The information about the available and the default languages is stored in 
 `meta` elements (built on buildtime):
 
+    <meta name="appVersion" content="2.2">
     <meta name="defaultLanguage" content="en-US">
-    <meta name="availableLanguages" content="en-US:2.2-1, de:2.2-1">
+    <meta
+      name="availableLanguages"
+      content="en-US:201411142303, de:201411051234">
 
 
 mozApps.getAdditionalLanguages()
@@ -56,8 +59,14 @@ in a Gecko pref and can be accessed via the `mozApps` API.
     mozApps.getAdditionalLanguages(manifestURI);
 
 This method returns a `DOMRequest` which resolves to an object with installed 
-additional languages available for the current apps as keys and language 
-versions as values.
+additional languages available for the current apps as keys:
+
+    {
+      "de": {
+        "target": "2.2",
+        "version": 201411051234
+      }
+    }
 
 The information about the bundled and the default languages is stored in `meta` 
 elements and can be accessed synchronously.
@@ -123,14 +132,14 @@ with the origin `my-langpack.gaiamobile.org` looks like this:
     },
     "languages-provided": {
       "de": {
-        "version": "2.2-4",
+        "version": 201411051234,
         "origins": {
           "app://calendar.gaiamobile.org/manifest.webapp": "/de/calendar",
           "app://email.gaiamobile.org/manifest.webapp": "/de/email"
         }
       },
       "pl": {
-        "version": "2.2-7",
+        "version": 201410292345,
         "origins": {
           "app://calendar.gaiamobile.org/manifest.webapp": "/pl/calendar",
           "app://email.gaiamobile.org/manifest.webapp": "/pl/email"
@@ -170,8 +179,14 @@ installed, the information about the new additional languages for each app is
 saved in the database:
 
     languages,app://email.gaiamobile.org/manifest.webapp: {
-      "de": "2.2-4",
-      "pl": "2.2-7"
+      "de": {
+        "target": "2.2",
+        "version": 201411051234
+      },
+      "pl": {
+        "target": "2.2",
+        "version": 201410292345
+      },
     }
 
 For each app, each resource form the langpack (from the corresponding 
