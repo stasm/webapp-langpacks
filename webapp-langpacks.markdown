@@ -4,7 +4,9 @@ Webapp Langpacks Spec
 This document outlines the design of the language package support for webapps 
 and instant webapps.  The design revolves around special webapps 
 which can register themselves to provide localization resources for multiple 
-apps and multiple languages at once.
+languages at once.  In 2.2, we want individual langpacks to support multiple 
+apps as well, although this could be deprecated in the future as we move 
+towards a mroe modular process of releasing Gaia apps.
 
 There are two independent parts of the language package system:
 
@@ -115,9 +117,9 @@ for multiple apps and multiple languages.  An example of a langpack manifest
 with the origin `my-langpack.gaiamobile.org` looks like this:
 
     "role": "langpack",
+    "version": "1.0.3",
     "languages-target": {
-      "app": "Gaia",
-      "version": "2.2"
+      "app://*.gaiamobile.org/manifest.webapp": "2.2"
     },
     "languages-provided": {
       "de": {
@@ -136,8 +138,21 @@ with the origin `my-langpack.gaiamobile.org` looks like this:
       }
     }
 
-A special `languages-provided` field defines languages and their versions for 
-app origins.  This information is used for the language negotiation.
+The `version` field is the version of the langpack app, for the purposes of 
+pushing updates via the Marketplace.
+
+Two special fields are unique to the `langpack` role: `languages-target` and 
+`languages-provided`.
+
+The former, `languages-target`, describes the target for the langpack.  For 
+now, only a special `app://*.gaiamobile.org/manifest.webapp` wildcard would be 
+supported denoting Gaia system-wide langpacks and the version of the system.  
+This field is used by the Marketplace to build the list of langpacks that are 
+relevant to the user's OS.
+
+The latter field, `languages-provided` field defines languages and their 
+versions for app origins.  This information is stored in device's chrome's 
+IndexedDB and used for resource IO and language negotiation.
 
   1. Can we skip the protocol part of the manifest URI in the keys of the 
      `languages_provided` object?
