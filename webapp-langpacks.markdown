@@ -68,6 +68,19 @@ additional languages available for the current apps as keys:
       }
     }
 
+  1. The signature of this method could also accept a second argument to 
+     specify the target version:
+
+         mozApps.getAdditionalLanguages(manifestURI, '2.2');
+
+     …which would return:
+
+         {
+           "de": {
+             "version": 201411051234
+           }
+         }
+
 The information about the bundled and the default languages is stored in `meta` 
 elements and can be accessed synchronously.
 
@@ -111,7 +124,7 @@ langpacks (from the step before), it can decide which method of IO to use:
     XHR requests.
 
   - For languages provided by langpacks, the resources are fetched via the 
-    `mozApps.getResource()` native API.
+    `mozApps.getResource()` native API (see below).
 
 In case of the `/locales/email.de.properties` resource, a regular XHR is used.
 
@@ -193,7 +206,7 @@ For each app, each resource form the langpack (from the corresponding
 `basepath` directory) is also saved in the DB, keyed by the app it belongs to 
 and the resource path.
 
-    resource,app://email.gaiamobile.org/manifest.webapp,locales/email.de.properties: "foo=Foo\nbar=Bar"
+    resource,app://email.gaiamobile.org/manifest.webapp,2.2,locales/email.de.properties: "foo=Foo\nbar=Bar"
 
   1. This requires a way to get the list of all files in the langpacks 
      implicitly.  See question #2 above about providing the list explicitly in 
@@ -223,6 +236,7 @@ resource:
 
     mozApps.getResource(
       'app://email.gaiamobile.org/manifest.webapp',
+      '2.2',
       '/locales/email.pl.properties');
 
 
@@ -232,7 +246,7 @@ mozApps.getResource()
 This API provides a way for userland code to request resources provided for 
 a specific app by some other app.
 
-    mozApps.getResource(manifestURI, resourcePath);
+    mozApps.getResource(manifestURI, appVersion, resourcePath);
 
 It is not a method of the `App` object to allow instant webapps (which are not 
 installed) to benefit from langpacks.
@@ -243,9 +257,9 @@ The `getResource` API queries the chrome IndexedDB for
 
 …and returns the contents stored in the DB:
 
-    resource,app://email.gaiamobile.org/manifest.webapp,locales/email.de.properties: "foo=Foo\nbar=Bar"
+    resource,app://email.gaiamobile.org/manifest.webapp,2.2,locales/email.de.properties: "foo=Foo\nbar=Bar"
 
-  1. The locale code is already declared in the resource path;  do we need to 
+  1. The locale code is already declared in the resource path;  should we also 
      pass it as an argument to `getResource`?
 
   2. In which form do we store resource contents in the DB?  Raw string with 
@@ -271,6 +285,7 @@ app's manifest.
 
     mozApps.getResource(
       'app://email.gaiamobile.org/manifest.webapp',
+      '2.2',
       '/manifest.pl.properties');
 
   1. How can this code know whether to fetch from the app's 
