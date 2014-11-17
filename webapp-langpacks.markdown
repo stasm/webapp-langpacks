@@ -357,6 +357,8 @@ Gaia Team:
   - Shared:  Use `mozApps.getResource` in `shared/js/manifest_helper.js` in 
     order to provide localized app names for the Cards view, the Task Manager, 
     the Rocketbar and the Settings > App Permissions panel.
+  - Input method: keyboard layout should fall back to `GAIA_DEFAULT_LOCALE` if 
+    no better is available for the newly installed langpack.
 
 
 L10n Team:
